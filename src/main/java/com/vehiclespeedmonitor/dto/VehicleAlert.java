@@ -12,6 +12,7 @@ public class VehicleAlert {
     private Date alertTime;
     private Date alertStartTime;
     private Date alertEndTime;
+    private double speedLimit;
 
     public String getAlertId() {
         return alertId;
@@ -77,11 +78,23 @@ public class VehicleAlert {
         this.alertEndTime = alertEndTime;
     }
 
+    public double getSpeedLimit() {
+        return speedLimit;
+    }
+
+    public void setSpeedLimit(double speedLimit) {
+        this.speedLimit = speedLimit;
+    }
+
     public boolean isAlertTimeSet() {
         return alertStartTime != null && alertEndTime != null;
     }
 
     public boolean isAlertTimeValid() {
         return alertTime.after(alertStartTime) && alertTime.before(alertEndTime);
+    }
+
+    public boolean isOverSpeed(){
+        return vehicleSpeed > speedLimit;
     }
 }

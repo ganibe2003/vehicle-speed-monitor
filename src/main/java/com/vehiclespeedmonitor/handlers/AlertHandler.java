@@ -1,64 +1,40 @@
 package com.vehiclespeedmonitor.handlers;
 
 import com.vehiclespeedmonitor.dto.AlertStatus;
+import com.vehiclespeedmonitor.dto.AlertType;
 import com.vehiclespeedmonitor.dto.VehicleAlert;
 import com.vehiclespeedmonitor.model.Notification;
 import com.vehiclespeedmonitor.model.NotificationRepository;
 import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
-import java.util.concurrent.Callable;
+@Service
+public class AlertHandler {
 
-public class AlertHandler implements Callable {
-
-    NotificationRepository repository;
-    private VehicleAlert vehicleAlert;
-    private double speedLimit = 0.0;
-
-    public AlertHandler(VehicleAlert vehicleAlert, NotificationRepository repository){
-        this.vehicleAlert = vehicleAlert;
-        this.repository = repository;
-    }
-
-    @Override
-    public AlertStatus call() throws Exception {
-        speedLimit = getSpeedLimit();
-        if(vehicleAlert.getVehicleSpeed() > speedLimit){
-            if(vehicleAlert.isAlertTimeSet()){
-                if(vehicleAlert.isAlertTimeValid()){
-                    storeAndPublishNotification();
-                }
-            }else{
-                publishNotification();
-            }
-        }
+    public AlertStatus publishNotification(VehicleAlert vehicleAlert) throws Exception{
+        //TODO implement logic to publish notification to queue
+        // At present storing notification to DB
         return new AlertStatus("SUCCESS");
     }
 
-    private void publishNotification() throws Exception{
-        //TODO implement logic to publish notification to queue
-        // At present storing notification to DB
-        storeNotification();
+    public AlertStatus storeNotification(NotificationRepository repository, VehicleAlert vehicleAlert) throws Exception {
+        repository.save(getNotification(vehicleAlert));
+        return new AlertStatus("SUCCESS");
     }
 
-    private void storeAndPublishNotification() throws Exception{
-        storeNotification();
-        publishNotification();
+    public AlertType getAlertType(VehicleAlert vehicleAlert){
+        //TODO implement logic to get AlertType from DB
+        return new AlertType(1);
     }
 
-    private void storeNotification() throws Exception {
-        repository.save(getNotification());
-    }
-
-    private double getSpeedLimit(){
+    public double getSpeedLimit() throws Exception{
         //TODO implement logic to get Speed limit from Google Road API
         return 45;
     }
 
-    private Notification getNotification(){
+    private Notification getNotification(VehicleAlert vehicleAlert){
         Notification notification = new Notification();
         BeanUtils.copyProperties(vehicleAlert, notification);
-        notification.setAllowedSpeed(speedLimit);
         return notification;
     }
 }

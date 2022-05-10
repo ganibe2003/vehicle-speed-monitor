@@ -38,6 +38,4 @@ public class AlertStatus {
        this.errorCode = errorCode;
        this.message = message;
     }
-
-
 }

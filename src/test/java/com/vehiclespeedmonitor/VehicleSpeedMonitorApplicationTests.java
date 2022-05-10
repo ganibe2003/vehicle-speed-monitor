@@ -1,7 +1,6 @@
 package com.vehiclespeedmonitor;
 
 import com.vehiclespeedmonitor.dto.VehicleAlert;
-import com.vehiclespeedmonitor.model.Notification;
 import com.vehiclespeedmonitor.model.NotificationRepository;
 import com.vehiclespeedmonitor.services.AlertService;
 import org.junit.jupiter.api.Test;
@@ -26,14 +25,11 @@ class VehicleSpeedMonitorApplicationTests {
 
 	@Test
 	public void processAlert(){
-		for(int i=1; i<1000; i++){
-			Thread t = new Thread() {
-				@Override
-				public void run() {
-					final VehicleAlert vehicleAlert = getAlert();
-					alertService.processAlert(vehicleAlert);
-				}
-			};
+		for(int i=1; i<10000; i++){
+			Thread t = new Thread(() -> {
+				final VehicleAlert vehicleAlert = getAlert();
+				alertService.processAlert(vehicleAlert);
+			});
 			t.start();
 		}
 	}

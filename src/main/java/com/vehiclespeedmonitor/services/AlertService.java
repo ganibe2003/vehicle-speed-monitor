@@ -1,6 +1,5 @@
 package com.vehiclespeedmonitor.services;
 
-import com.google.common.util.concurrent.*;
 import com.vehiclespeedmonitor.dto.AlertStatus;
 import com.vehiclespeedmonitor.dto.VehicleAlert;
 import com.vehiclespeedmonitor.handlers.AlertHandler;
@@ -8,34 +7,52 @@ import com.vehiclespeedmonitor.model.NotificationRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
 @Service
-public class AlertService implements IAlertService {
+public class AlertService implements IAlertService{
 
     @Autowired
     NotificationRepository repository;
 
+    @Autowired
+    AlertHandler alertHandler;
+
     @Override
     public void processAlert(VehicleAlert vehicleAlert) {
-        ListeningExecutorService service = MoreExecutors.listeningDecorator(Executors.newSingleThreadExecutor());
-        ListenableFuture<AlertStatus> status = service.submit(new AlertHandler(vehicleAlert, repository));
-
-        Futures.addCallback(status, new FutureCallback<AlertStatus>() {
-            @Override
-            public void onSuccess(AlertStatus status) {
-                //TODO Implement success scenario
-                System.out.println(status.getStatus());
+        Executor executor = Executors.newFixedThreadPool(3);
+        CompletableFuture.supplyAsync(() ->{
+            try {
+                return alertHandler.getSpeedLimit();
+            }catch(Exception ex){
+                throw new IllegalStateException(ex);
             }
-            @Override
-            public void onFailure(Throwable t) {
-                //TODO Implement failure scenario
-                t.printStackTrace();
+        }).thenApplyAsync(result -> {
+            vehicleAlert.setSpeedLimit(result);
+            return alertHandler.getAlertType(vehicleAlert);
+        }).thenApplyAsync(result ->{
+            if(result.getAlertType() == 1){
+                if(vehicleAlert.isOverSpeed()){
+                    try{
+                        //return alertHandler.publishNotification(vehicleAlert);
+                        return alertHandler.storeNotification(repository, vehicleAlert);
+                    }catch(Exception ex){
+                        throw new IllegalStateException(ex);
+                    }
+                }
+            }else{
+                try{
+                    return alertHandler.storeNotification(repository, vehicleAlert);
+                }catch(Exception ex){
+                    throw new IllegalStateException(ex);
+                }
             }
+            return new AlertStatus("FAILED");
+        }).handleAsync((result, ex)->{
+            System.out.println(vehicleAlert.getAlertId() + "-> " + result);
+            return result;
         });
-    }
-
-    private int getSpeedLimit(String vehicleId, double vehicleLongitude, double vehicleLatitude){
-        return 45;
     }
 }
